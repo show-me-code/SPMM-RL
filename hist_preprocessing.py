@@ -59,7 +59,9 @@ class preprocess():
             self.sparse_dense.append(narr)
         return self.sparse_dense
 
-    def to_hist(self, r, BINS):
+    #创建行的histogram represention 测试通过，可能要配合col填入双通道
+    #要测试一下单通道怎么样
+    def to_hist_row(self, r, BINS):
         for i in range(len(self.sparse_dense)):
             hist_matrix = np.zeros((r, BINS))
             height, width = np.shape(self.sparse_dense[i])[0], np.shape(self.sparse_dense[i])[1]
@@ -68,6 +70,50 @@ class preprocess():
             temp = sparse.coo_matrix(self.sparse_dense[i]) #用coo格式找出来所有非0行列
             col = temp.col #非0元素索引的列
             row = temp.row #非0元素索引的行
+            enrty = temp.data
+            for i in range(len(enrty)):
+                row_r = row[i]/scale_ratio
+                bin = BINS* abs(row[i] - col[i]) / max_dim
+                hist_matrix[row_r][bin] += 1
+        return hist_matrix
+
+    #可能之后要填入双通道
+    def to_hist_col(self, r, BINS):
+        for i in range(len(self.sparse_dense)):
+            hist_matrix = np.zeros((r, BINS))
+            height, width = np.shape(self.sparse_dense[i])[0], np.shape(self.sparse_dense[i])[1]
+            scale_ratio = int(height/r)
+            max_dim = max(height, width)
+            temp = sparse.coo_matrix(self.sparse_dense[i]) #用coo格式找出来所有非0行列
+            col = temp.col #非0元素索引的列
+            row = temp.row #非0元素索引的行
+            enrty = temp.data
+            for i in range(len(enrty)):
+                row_r = col[i]/scale_ratio
+                bin = BINS* abs(row[i] - col[i]) / max_dim
+                hist_matrix[row_r][bin] += 1
+        return hist_matrix
+
+    #test check
+    def test_hist(self, A, r, BINS):
+        hist_matrix = np.zeros((r, BINS))
+        height, width = np.shape(A)[0], np.shape(A)[1]
+        scale_ratio = int(height / r)
+        max_dim = max(height, width)
+        #A = A.T
+        temp = sparse.coo_matrix(A)  # 用coo格式找出来所有非0行列
+        col = temp.col  # 非0元素索引的列
+        row = temp.row  # 非0元素索引的行
+        enrty = temp.data
+        for i in range(len(enrty)):
+            row_r = int(col[i] / scale_ratio)
+            print(row_r)
+            bin = int(BINS * abs(col[i] - row[i]) / max_dim)
+            print(bin)
+            hist_matrix[row_r][bin] += 1
+        return hist_matrix
+
+
 
 
 if __name__ == '__main__':
@@ -79,18 +125,31 @@ if __name__ == '__main__':
     m = len(matrix['Problem'][0][0][1].toarray()) #获取x轴长度，其实是个二维数组
     print(m)'''
     p = preprocess(dataset_path_mat=r'/home/drsun/文档/SpMM/SPMM-RL/data/HB/', dataset_path_mtx=' ')
-    l = p.load_mat()
+    '''l = p.load_mat()
     #p.to_hist( r=2, BINS=2)
     print(type(l[0]))
     l = p.to_dense()
     print(np.shape(l[0]))
     a = sparse.coo_matrix(l[0]) #转换为特定格式
     print(a)
-    print(a.col) #找到特定格式的列
-    print(a.row) #找到特定格式的行
-    print(a.data) #找到对应的数据
+    print(len(a.col)) #找到特定格式的列
+    print(len(a.row)) #找到特定格式的行
+    print(len(a.data)) #找到对应的数据
     #print(l[0].tocoo())
     #print(np.size(l[0][0]))
     #print(len(l[0]))
     #print(np.shape(l[0]))
     #print(l)
+    '''
+
+    A = [[45, 0, 0, 0, 0, 0, 0, 0],
+         [0, -25, 0, 0, 0, 0, 0, 0],
+         [0, 0, 89, 37, 0, 0, 0, 0],
+         [0, 0, 43, 94, 0, 0, 0, 0],
+         [77, 0, 0, 0, 0, 15, 0, 0],
+         [0, 0, 0, 0, 36, 78, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 23],
+         [0, 0, 0, 17, 0, 0, 11, 0]]
+    A = np.array(A)
+    B = p.test_hist(A=A, r=4, BINS=4)
+    print(B)
